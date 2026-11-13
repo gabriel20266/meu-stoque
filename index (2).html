@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="pt-AO">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0B2A6F">
+<title>Meu Estoque</title>
+<style>
+:root{--navy:#0B2A6F;--blue:#0B57D0;--orange:#F28C0F;--bg:#F3F6FC;--card:#fff;--ink:#14213D;--mut:#667394;--line:#DDE4F2;--red:#C62828;--green:#1B8A4B}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0}
+body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--ink);padding-bottom:96px}
+header{background:var(--navy);color:#fff;padding:calc(env(safe-area-inset-top,0px) + 16px) 16px 56px}
+header h1{margin:0;font-size:24px;font-weight:800;letter-spacing:-.3px}
+header p{margin:2px 0 0;color:#B9C8EE;font-size:13px}
+.sum{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:-40px 14px 0}
+.box{background:var(--card);border-radius:14px;padding:12px 14px;box-shadow:0 2px 10px rgba(11,42,111,.12)}
+.box.big{grid-column:1/3;border-left:6px solid var(--orange)}
+.box small{color:var(--mut);font-size:12px}
+.box b{display:block;font-size:22px;margin-top:2px;color:var(--navy)}
+.box.big b{font-size:30px;color:var(--blue)}
+.tabs{display:flex;gap:8px;margin:16px 14px 8px}
+.tabs button{flex:1;padding:11px;border:2px solid var(--line);background:#fff;border-radius:12px;font-weight:700;color:var(--mut);font-size:14px}
+.tabs button.on{background:var(--blue);border-color:var(--blue);color:#fff}
+.list{margin:0 14px}
+.item{background:var(--card);border-radius:12px;padding:12px;margin-bottom:8px;display:flex;align-items:center;gap:10px;border:1px solid var(--line)}
+.item .nm{flex:1;min-width:0}
+.item .nm b{display:block;font-size:16px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.item .nm span{font-size:13px;color:var(--mut)}
+.qty{min-width:48px;text-align:center;padding:6px 8px;border-radius:10px;background:#E6F4EC;color:var(--green);font-weight:800;font-size:16px}
+.qty.low{background:#FFF1DC;color:#B26500}
+.qty.zero{background:#FDE7E7;color:var(--red)}
+.mini{border:0;border-radius:10px;padding:9px 11px;font-weight:700;font-size:13px;color:#fff}
+.mini.in{background:var(--blue)}.mini.out{background:var(--orange)}.mini.ed{background:#E8EDF8;color:var(--navy)}
+.mv .tag{font-size:12px;font-weight:800;padding:4px 8px;border-radius:8px}
+.tag.in{background:#E3EDFF;color:var(--blue)}.tag.out{background:#FFF1DC;color:#B26500}
+.empty{text-align:center;color:var(--mut);padding:36px 20px;font-size:15px}
+.bar{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--line);padding:10px 14px calc(env(safe-area-inset-bottom,0px) + 10px);display:flex;gap:8px}
+.bar button{flex:1;border:0;border-radius:12px;padding:14px 6px;font-weight:800;font-size:15px;color:#fff}
+.b1{background:var(--blue)}.b2{background:var(--orange)}.b3{background:var(--navy)}
+.ov{position:fixed;inset:0;background:rgba(10,20,50,.55);display:none;align-items:flex-end;z-index:9}
+.ov.show{display:flex}
+.sheet{background:#fff;width:100%;border-radius:20px 20px 0 0;padding:18px 16px calc(env(safe-area-inset-bottom,0px) + 18px);max-height:90vh;overflow:auto}
+.sheet h2{margin:0 0 12px;font-size:20px;color:var(--navy)}
+label{display:block;font-size:13px;font-weight:700;color:var(--mut);margin:10px 0 4px}
+input,select{width:100%;padding:13px;border:2px solid var(--line);border-radius:12px;font-size:16px;background:#fff;color:var(--ink)}
+input:focus,select:focus,button:focus-visible{outline:3px solid var(--orange);outline-offset:1px}
+.tot{margin-top:12px;font-size:15px;color:var(--mut)}.tot b{color:var(--blue);font-size:20px}
+.row{display:flex;gap:8px;margin-top:16px}
+.row button{flex:1;padding:14px;border:0;border-radius:12px;font-weight:800;font-size:16px}
+.ok{background:var(--blue);color:#fff}.no{background:#E8EDF8;color:var(--navy)}.del{background:#FDE7E7;color:var(--red)}
+.err{color:var(--red);font-size:14px;font-weight:700;margin-top:10px;min-height:18px}
+.foot{text-align:center;margin:18px 14px;font-size:13px}
+.foot button{background:none;border:0;color:var(--red);font-weight:700;text-decoration:underline;font-size:13px}
+.box.neg b{color:var(--red)}.box.ok2 b{color:var(--green)}
+.add{width:100%;border:0;border-radius:12px;padding:14px;margin-bottom:10px;background:var(--navy);color:#fff;font-weight:800;font-size:16px}
+.pdf{width:100%;border:0;border-radius:12px;padding:14px;margin-bottom:10px;background:#fff;color:var(--navy);border:2px solid var(--navy);font-weight:800;font-size:16px}
+.ex b.v{color:var(--red);white-space:nowrap}
+</style>
+</head>
+<body>
+<header><h1>Meu Estoque</h1><p>Controle, organize, lucre mais</p></header>
+
+<div class="sum">
+  <div class="box big"><small>Total vendido</small><b id="sTotal">0 Kz</b></div>
+  <div class="box"><small>Despesas</small><b id="sExp">0 Kz</b></div>
+  <div class="box" id="bRest"><small>Resta (vendas - despesas)</small><b id="sRest">0 Kz</b></div>
+  <div class="box"><small>Quantidade vendida</small><b id="sQty">0</b></div>
+  <div class="box"><small>Em stock agora</small><b id="sStock">0</b></div>
+</div>
+
+<div class="tabs">
+  <button id="t1" class="on" onclick="tab(1)">Produtos</button>
+  <button id="t2" onclick="tab(2)">Movimentos</button>
+  <button id="t3" onclick="tab(3)">Despesas</button>
+</div>
+<div class="list" id="list"></div>
+<div class="list"><button class="pdf" onclick="makeReport()">Relatório em PDF</button></div>
+<div class="foot"><button onclick="resetAll()">Apagar todos os dados</button></div>
+
+<div class="bar">
+  <button class="b3" onclick="openNew()">+ Produto</button>
+  <button class="b1" onclick="openMove('in')">Entrada</button>
+  <button class="b2" onclick="openMove('out')">Venda</button>
+</div>
+
+<div class="ov" id="ov" onclick="if(event.target===this)closeM()"><div class="sheet" id="sheet"></div></div>
+
+<script>
+var KEY='meu_estoque_v1',D={p:[],m:[],e:[]},view=1,T={};
+function load(){try{var r=localStorage.getItem(KEY);if(r)D=JSON.parse(r)}catch(e){}if(!D.e)D.e=[]}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(D))}catch(e){}}
+function kz(n){return Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g,' ')+' Kz'}
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+function $(i){return document.getElementById(i)}
+function find(id){return D.p.filter(function(x){return x.id===id})[0]}
+function dt(t){var d=new Date(t);return d.toLocaleDateString('pt-PT')+' '+d.toLocaleTimeString('pt-PT',{hour:'2-digit',minute:'2-digit'})}
+function tab(n){view=n;for(var i=1;i<4;i++)$('t'+i).className=i==n?'on':'';render()}
+
+function render(){
+  var tv=0,tq=0,st=0;
+  D.m.forEach(function(m){if(m.t==='out'){tv+=m.q*m.pr;tq+=m.q}});
+  D.p.forEach(function(p){st+=p.q});
+  var ex=0;D.e.forEach(function(e){ex+=e.v});
+  T={tv:tv,tq:tq,st:st,ex:ex,rest:tv-ex};
+  $('sTotal').textContent=kz(tv);$('sQty').textContent=tq;$('sStock').textContent=st;
+  $('sExp').textContent=kz(ex);$('sRest').textContent=kz(tv-ex);
+  $('bRest').className='box '+(tv-ex<0?'neg':'ok2');
+  var h='';
+  if(view==1){
+    if(!D.p.length)h='<div class="empty">Ainda não tem produtos.<br>Toque em <b>+ Produto</b> para começar.</div>';
+    D.p.forEach(function(p){
+      var c=p.q<=0?'zero':p.q<=3?'low':'';
+      h+='<div class="item"><div class="nm"><b>'+esc(p.n)+'</b><span>'+kz(p.pr)+'</span></div><span class="qty '+c+'">'+p.q+'</span>'
+       +'<button class="mini in" onclick="openMove(\'in\',\''+p.id+'\')">Entrada</button>'
+       +'<button class="mini out" onclick="openMove(\'out\',\''+p.id+'\')">Venda</button>'
+       +'<button class="mini ed" onclick="openEdit(\''+p.id+'\')">Editar</button></div>';
+    });
+  }else if(view==2){
+    if(!D.m.length)h='<div class="empty">Sem movimentos ainda.<br>As entradas e vendas aparecem aqui.</div>';
+    D.m.slice().reverse().forEach(function(m){
+      h+='<div class="item mv"><span class="tag '+m.t+'">'+(m.t==='in'?'Entrada':'Venda')+'</span><div class="nm"><b>'+esc(m.n)+'</b><span>'+dt(m.d)+'</span></div>'
+       +'<div style="text-align:right"><b>'+(m.t==='in'?'+':'-')+m.q+'</b>'+(m.t==='out'?'<br><span style="font-size:13px;color:var(--mut)">'+kz(m.q*m.pr)+'</span>':'')+'</div></div>';
+    });
+  }else{
+    h='<button class="add" onclick="openExp()">+ Nova despesa</button>';
+    if(!D.e.length)h+='<div class="empty">Sem despesas ainda.<br>Registe aqui o que gastou; o valor sai do total das vendas.</div>';
+    D.e.slice().reverse().forEach(function(e){
+      h+='<div class="item ex"><div class="nm"><b>'+esc(e.n)+'</b><span>'+dt(e.d)+'</span></div><b class="v">-'+kz(e.v)+'</b><button class="mini ed" onclick="delExp(\''+e.id+'\')">Apagar</button></div>';
+    });
+  }
+  $('list').innerHTML=h;
+}
+
+function openM(html){$('sheet').innerHTML=html;$('ov').className='ov show'}
+function closeM(){$('ov').className='ov'}
+
+function openNew(){
+  openM('<h2>Novo produto</h2><label>Nome</label><input id="fn" placeholder="Ex.: Arroz 5kg"><label>Preço de venda (Kz)</label><input id="fp" type="number" inputmode="decimal" min="0" placeholder="0"><label>Quantidade inicial</label><input id="fq" type="number" inputmode="numeric" min="0" placeholder="0"><div class="err" id="er"></div><div class="row"><button class="no" onclick="closeM()">Cancelar</button><button class="ok" onclick="saveNew()">Guardar</button></div>');
+  setTimeout(function(){$('fn').focus()},100);
+}
+function saveNew(){
+  var n=$('fn').value.trim(),pr=parseFloat($('fp').value),q=parseInt($('fq').value||'0',10);
+  if(!n){$('er').textContent='Escreva o nome do produto.';return}
+  if(isNaN(pr)||pr<0){$('er').textContent='Escreva o preço de venda.';return}
+  if(isNaN(q)||q<0){$('er').textContent='Quantidade inválida.';return}
+  var p={id:'p'+Date.now(),n:n,pr:pr,q:q};
+  D.p.push(p);
+  if(q>0)D.m.push({t:'in',pid:p.id,n:n,q:q,pr:pr,d:Date.now()});
+  save();closeM();render();
+}
+
+function openMove(t,id){
+  if(!D.p.length){openM('<h2>Sem produtos</h2><p>Crie primeiro um produto.</p><div class="row"><button class="ok" onclick="closeM();openNew()">+ Produto</button></div>');return}
+  var o=D.p.map(function(p){return '<option value="'+p.id+'"'+(p.id===id?' selected':'')+'>'+esc(p.n)+' ('+p.q+')</option>'}).join('');
+  openM('<h2>'+(t==='in'?'Entrada de stock':'Registar venda')+'</h2><label>Produto</label><select id="mp" onchange="upd()">'+o+'</select><label>Quantidade</label><input id="mq" type="number" inputmode="numeric" min="1" value="1" oninput="upd()"><div class="tot" id="tt"></div><div class="err" id="er"></div><div class="row"><button class="no" onclick="closeM()">Cancelar</button><button class="ok" onclick="saveMove(\''+t+'\')">'+(t==='in'?'Adicionar':'Vender')+'</button></div>');
+  window._t=t;upd();
+}
+function upd(){
+  var p=find($('mp').value),q=parseInt($('mq').value||'0',10)||0;
+  $('tt').innerHTML=window._t==='out'?'Total: <b>'+kz(q*p.pr)+'</b> · disponível: '+p.q:'Stock atual: '+p.q+' → <b>'+(p.q+q)+'</b>';
+}
+function saveMove(t){
+  var p=find($('mp').value),q=parseInt($('mq').value,10);
+  if(!q||q<1){$('er').textContent='Escreva uma quantidade válida.';return}
+  if(t==='out'&&q>p.q){$('er').textContent='Stock insuficiente: só tem '+p.q+'.';return}
+  p.q+=t==='in'?q:-q;
+  D.m.push({t:t,pid:p.id,n:p.n,q:q,pr:p.pr,d:Date.now()});
+  save();closeM();render();
+}
+
+function openEdit(id){
+  var p=find(id);
+  openM('<h2>Editar produto</h2><label>Nome</label><input id="fn" value="'+esc(p.n)+'"><label>Preço de venda (Kz)</label><input id="fp" type="number" inputmode="decimal" min="0" value="'+p.pr+'"><div class="err" id="er"></div><div class="row"><button class="del" onclick="delP(\''+id+'\')">Apagar</button><button class="ok" onclick="saveEdit(\''+id+'\')">Guardar</button></div>');
+}
+function saveEdit(id){
+  var p=find(id),n=$('fn').value.trim(),pr=parseFloat($('fp').value);
+  if(!n||isNaN(pr)||pr<0){$('er').textContent='Verifique o nome e o preço.';return}
+  p.n=n;p.pr=pr;save();closeM();render();
+}
+function delP(id){
+  if(!confirm('Apagar este produto? O histórico de vendas fica guardado.'))return;
+  D.p=D.p.filter(function(x){return x.id!==id});save();closeM();render();
+}
+function resetAll(){
+  if(!confirm('Apagar TODOS os produtos e movimentos? Não pode desfazer.'))return;
+  D={p:[],m:[],e:[]};save();render();
+}
+function openExp(){
+  openM('<h2>Nova despesa</h2><div class="tot">Resta agora: <b>'+kz(T.rest)+'</b></div><label>Descrição</label><input id="fn" placeholder="Ex.: Transporte, renda, salário"><label>Valor (Kz)</label><input id="fp" type="number" inputmode="decimal" min="0" placeholder="0"><div class="err" id="er"></div><div class="row"><button class="no" onclick="closeM()">Cancelar</button><button class="ok" onclick="saveExp()">Guardar</button></div>');
+  setTimeout(function(){$('fn').focus()},100);
+}
+function saveExp(){
+  var n=$('fn').value.trim(),v=parseFloat($('fp').value);
+  if(!n){$('er').textContent='Escreva a descrição da despesa.';return}
+  if(isNaN(v)||v<=0){$('er').textContent='Escreva um valor maior que zero.';return}
+  if(v>T.rest&&!confirm('Esta despesa é maior do que o que resta ('+kz(T.rest)+'). Registar mesmo assim?'))return;
+  D.e.push({id:'e'+Date.now(),n:n,v:v,d:Date.now()});save();closeM();render();
+}
+function delExp(id){
+  if(!confirm('Apagar esta despesa?'))return;
+  D.e=D.e.filter(function(x){return x.id!==id});save();render();
+}
+
+/* ---- Relatório PDF (gerado no próprio telemóvel, sem internet) ---- */
+function pe(t){var o='';t=String(t);for(var i=0;i<t.length;i++){var c=t.charCodeAt(i);if(c>255)c=63;var ch=String.fromCharCode(c);if(ch==='('||ch===')'||ch==='\\')o+='\\';o+=ch}return o}
+function cut(t,n){t=String(t);return t.length>n?t.slice(0,n-1)+'.':t}
+function buildPDF(L){
+  var pages=[],cur=[],y=800;
+  L.forEach(function(l){
+    var sz=l.s||11,h=sz*1.6;
+    if(y-h<50){pages.push(cur);cur=[];y=800}
+    y-=h;
+    (l.c||[]).forEach(function(t,i){cur.push('BT /'+(l.b?'F2':'F1')+' '+sz+' Tf '+l.x[i]+' '+y.toFixed(1)+' Td ('+pe(t)+') Tj ET')});
+  });
+  pages.push(cur);
+  var n=pages.length,o=[],kids=[];
+  pages.forEach(function(c,i){
+    c.push('BT /F1 9 Tf 40 25 Td (Meu Estoque - pagina '+(i+1)+' de '+n+') Tj ET');
+    var body=c.join('\n'),cid=5+2*i,pid=6+2*i;
+    o[cid]='<</Length '+body.length+'>>\nstream\n'+body+'\nendstream';
+    o[pid]='<</Type/Page/Parent 2 0 R/MediaBox[0 0 595 842]/Resources<</Font<</F1 3 0 R/F2 4 0 R>>>>/Contents '+cid+' 0 R>>';
+    kids.push(pid+' 0 R');
+  });
+  o[1]='<</Type/Catalog/Pages 2 0 R>>';
+  o[2]='<</Type/Pages/Kids['+kids.join(' ')+']/Count '+n+'>>';
+  o[3]='<</Type/Font/Subtype/Type1/BaseFont/Helvetica/Encoding/WinAnsiEncoding>>';
+  o[4]='<</Type/Font/Subtype/Type1/BaseFont/Helvetica-Bold/Encoding/WinAnsiEncoding>>';
+  var total=4+2*n,out='%PDF-1.4\n',offs=[];
+  for(var i=1;i<=total;i++){offs[i]=out.length;out+=i+' 0 obj\n'+o[i]+'\nendobj\n'}
+  var xr=out.length;
+  out+='xref\n0 '+(total+1)+'\n0000000000 65535 f \n';
+  for(i=1;i<=total;i++)out+=('0000000000'+offs[i]).slice(-10)+' 00000 n \n';
+  out+='trailer\n<</Size '+(total+1)+'/Root 1 0 R>>\nstartxref\n'+xr+'\n%%EOF';
+  var u=new Uint8Array(out.length);for(i=0;i<out.length;i++)u[i]=out.charCodeAt(i)&255;
+  return new Blob([u],{type:'application/pdf'});
+}
+function makeReport(){
+  render();
+  var L=[],sales={},now=new Date();
+  function row(c,x,b,s){L.push({c:c,x:x,b:b,s:s})}
+  row(['Meu Estoque - Relatorio'.replace('Relatorio','Relatório')],[40],true,20);
+  row(['Gerado em '+dt(now.getTime())],[40],false,10);
+  row([''],[40]);
+  row(['Resumo'],[40],true,14);
+  row(['Total vendido','Kz'===0?'':kz(T.tv)],[40,300]);
+  row(['Quantidade vendida',String(T.tq)],[40,300]);
+  row(['Total de despesas',kz(T.ex)],[40,300]);
+  row(['Resta (vendas - despesas)',kz(T.rest)],[40,300],true,13);
+  row(['Produtos em stock (unidades)',String(T.st)],[40,300]);
+  row([''],[40]);
+  row(['Vendas por produto'],[40],true,14);
+  D.m.forEach(function(m){if(m.t==='out'){var k=m.n;sales[k]=sales[k]||{q:0,v:0};sales[k].q+=m.q;sales[k].v+=m.q*m.pr}});
+  var ks=Object.keys(sales);
+  if(!ks.length)row(['Sem vendas registadas.'],[40]);
+  else{row(['Produto','Qtd','Total'],[40,300,380],true,10);ks.forEach(function(k){row([cut(k,38),String(sales[k].q),kz(sales[k].v)],[40,300,380])})}
+  row([''],[40]);
+  row(['Despesas'],[40],true,14);
+  if(!D.e.length)row(['Sem despesas registadas.'],[40]);
+  else{row(['Data','Descrição','Valor'],[40,130,420],true,10);D.e.forEach(function(e){row([new Date(e.d).toLocaleDateString('pt-PT'),cut(e.n,44),kz(e.v)],[40,130,420])})}
+  row([''],[40]);
+  row(['Stock atual'],[40],true,14);
+  if(!D.p.length)row(['Sem produtos.'],[40]);
+  else{row(['Produto','Preço de venda','Qtd'],[40,300,430],true,10);D.p.forEach(function(p){row([cut(p.n,38),kz(p.pr),String(p.q)],[40,300,430])})}
+  var blob=buildPDF(L),name='relatorio-meu-estoque.pdf';
+  var f;try{f=new File([blob],name,{type:'application/pdf'})}catch(e){}
+  if(f&&navigator.canShare&&navigator.canShare({files:[f]})){
+    navigator.share({files:[f],title:'Relatório Meu Estoque'}).catch(function(e){if(e&&e.name!=='AbortError')dl(blob,name)});
+  }else dl(blob,name);
+}
+function dl(blob,name){
+  var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;document.body.appendChild(a);a.click();
+  setTimeout(function(){URL.revokeObjectURL(a.href);a.remove()},3000);
+}
+load();render();
+</script>
+</body>
+</html>
