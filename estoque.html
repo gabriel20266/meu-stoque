@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Gestor de Estoque</title>
+
+<style>
+*{box-sizing:border-box}
+body{margin:0;padding:15px;background:#f1f4f8;font-family:Arial,sans-serif;color:#263445}
+.container{max-width:950px;margin:auto}
+h1{text-align:center;color:#17365d}
+.card{background:white;padding:18px;margin:15px 0;border-radius:10px;box-shadow:0 2px 8px #0001}
+h3{color:#17365d;margin-top:0}
+input,select,button{width:100%;padding:12px;margin:6px 0;border:1px solid #ddd;border-radius:6px;font-size:15px}
+button{background:#1769aa;color:white;border:0;font-weight:bold;cursor:pointer}
+button:hover{opacity:.85}
+.resumo{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.box{background:#17365d;color:white;padding:15px;border-radius:8px}
+.box strong{display:block;font-size:21px;margin-top:8px}
+.green{background:#16834a}
+.red{background:#b73535}
+.orange{background:#b87519}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{padding:10px 6px;border-bottom:1px solid #eee;text-align:left}
+th{background:#edf2f7}
+.excluir{background:#dc3545;padding:7px}
+.small{font-size:12px;color:#64748b}
+.table-wrap{overflow-x:auto}
+@media(max-width:500px){
+.resumo{grid-template-columns:1fr 1fr}
+.box strong{font-size:17px}
+}
+</style>
+</head>
+
+<body>
+<div class="container">
+
+<h1>Gestor de Estoque</h1>
+
+<div class="card">
+<h3>Resumo do estoque</h3>
+<div class="resumo">
+<div class="box">
+Produtos cadastrados
+<strong id="totalProdutos">0</strong>
+</div>
+<div class="box">
+Unidades em estoque
+<strong id="totalUnidades">0</strong>
+</div>
+</div>
+</div>
+
+<div class="card">
+<h3>Cadastrar produto</h3>
+<input id="nome" placeholder="Nome do produto">
+<input id="quantidade" type="number" min="0" placeholder="Quantidade inicial">
+<input id="compra" type="number" min="0" step="0.01" placeholder="Preço de compra unitário (KZ)">
+<input id="venda" type="number" min="0" step="0.01" placeholder="Preço de venda unitário (KZ)">
+<button onclick="cadastrar()">Cadastrar produto</button>
+</div>
+
+<div class="card">
+<h3>Entrada de mercadoria</h3>
+<select id="entradaProduto"></select>
+<input id="entradaQtd" type="number" min="1" placeholder="Quantidade recebida">
+<button onclick="entrada()">Registar entrada</button>
+<p class="small">A entrada será calculada pelo preço de compra cadastrado.</p>
+</div>
+
+<div class="card">
+<h3>Registar venda / saída</h3>
+<select id="vendaProduto"></select>
+<input id="vendaQtd" type="number" min="1" placeholder="Quantidade vendida">
+<button class="green" onclick="vender()">Registar venda</button>
+<p class="small">O sistema calcula automaticamente o valor da venda e o lucro.</p>
+</div>
+
+<div class="card">
+<h3>Registar outras despesas</h3>
+<input id="despesaNome" placeholder="Descrição da despesa (ex.: transporte)">
+<input id="despesaValor" type="number" min="0.01" step="0.01" placeholder="Valor da despesa (KZ)">
+<button class="orange" onclick="adicionarDespesa()">Registar despesa</button>
+</div>
+
+<div class="card">
+<h3>Relatório financeiro diário</h3>
+<label>Escolher data:</label>
+<input type="date" id="dataRelatorio" onchange="relatorio()">
+
+<div class="resumo">
+<div class="box">
+Compras de mercadoria
+<strong id="compras">0 KZ</strong>
+</div>
+<div class="box">
+Total de vendas
+<strong id="vendas">0 KZ</strong>
+</div>
+<div class="box">
+Outras despesas
+<strong id="despesas">0 KZ</strong>
+</div>
+<div class="box">
+Custo dos produtos vendidos
+<strong id="custoVendido">0 KZ</strong>
+</div>
+<div class="box green">
+Lucro bruto
+<strong id="lucroBruto">0 KZ</strong>
+</div>
+<div class="box" id="caixaLucro">
+Lucro líquido
+<strong id="lucroLiquido">0 KZ</strong>
+</div>
+</div>
+
+<p class="small">
+Lucro bruto = vendas - custo dos produtos vendidos.<br>
+Lucro líquido = lucro bruto - outras despesas.
+</p>
+</div>
+
+<div class="card">
+<h3>Lista de produtos</h3>
+<div class="table-wrap">
+<table>
+<thead>
+<tr>
+<th>Produto</th>
+<th>Stock</th>
+<th>Compra</th>
+<th>Venda</th>
+<th>Ação</th>
+</tr>
+</thead>
+<tbody id="listaProdutos"></tbody>
+</table>
+</div>
+</div>
+
+<div class="card">
+<h3>Histórico de movimentos</h3>
+<div class="table-wrap">
+<table>
+<thead>
+<tr>
+<th>Data</th>
+<th>Tipo</th>
+<th>Descrição</th>
+<th>Valor</th>
+</tr>
+</thead>
+<tbody id="historico"></tbody>
+</table>
+</div>
+</div>
+
+</div>
+
+<script>
+let produtos = JSON.parse(localStorage.getItem("produtos")) || [];
+let movimentos = JSON.parse(localStorage.getItem("movimentos")) || [];
+
+function hoje(){
+    let d = new Date();
+    return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+}
+
+function guardar(){
+    localStorage.setItem("produtos",JSON.stringify(produtos));
+    localStorage.setItem("movimentos",JSON.stringify(movimentos));
+}
+
+function dinheiro(valor){
+    return Number(valor).toLocaleString("pt-AO",{
+        minimumFractionDigits:2,
+        maximumFractionDigits:2
+    })+" KZ";
+}
+
+function cadastrar(){
+    let nome=document.getElementById("nome").value.trim();
+    let qtd=Number(document.getElementById("quantidade").value);
+    let compra=Number(document.getElementById("compra").value);
+    let venda=Number(document.getElementById("venda").value);
+
+    if(!nome || document.getElementById("quantidade").value==="" ||
+       document.getElementById("compra").value==="" ||
+       document.getElementById("venda").value==="" ||
+       qtd<0 || compra<0 || venda<0){
+        alert("Preencha todos os campos corretamente.");
+        return;
+    }
+
+    if(produtos.some(p=>p.nome.toLowerCase()===nome.toLowerCase())){
+        alert("Este produto já existe.");
+        return;
+    }
+
+    let p={
+        id:Date.now(),
+        nome:nome,
+        quantidade:qtd,
+        compra:compra,
+        venda:venda
+    };
+
+    produtos.push(p);
+
+    if(qtd>0){
+        movimentos.push({
+            data:hoje(),
+            tipo:"Compra",
+            descricao:"Stock inicial: "+nome,
+            quantidade:qtd,
+            valor:qtd*compra
+        });
+    }
+
+    guardar();
+    atualizar();
+    relatorio();
+    alert("Produto cadastrado com sucesso!");
+    document.getElementById("nome").value="";
+    document.getElementById("quantidade").value="";
+    document.getElementById("compra").value="";
+    document.getElementById("venda").value="";
+}
+
+function entrada(){
+    let id=Number(document.getElementById("entradaProduto").value);
+    let qtd=Number(document.getElementById("entradaQtd").value);
+    let p=produtos.find(x=>x.id===id);
+
+    if(!p || !Number.isInteger(qtd) || qtd<=0){
+        alert("Selecione o produto e informe uma quantidade válida.");
+        return;
+    }
+
+    p.quantidade+=qtd;
+
+    movimentos.push({
+        data:hoje(),
+        tipo:"Compra",
+        descricao:"Entrada: "+p.nome,
+        quantidade:qtd,
+        valor:qtd*p.compra
+    });
+
+    guardar();
+    atualizar();
+    relatorio();
+    document.getElementById("entradaQtd").value="";
+    alert("Entrada registada!");
+}
+
+function vender(){
+    let id=Number(document.getElementById("vendaProduto").value);
+    let qtd=Number(document.getElementById("vendaQtd").value);
+    let p=produtos.find(x=>x.id===id);
+
+    if(!p || !Number.isInteger(qtd) || qtd<=0){
+        alert("Selecione o produto e informe uma quantidade válida.");
+        return;
+    }
+
+    if(qtd>p.quantidade){
+        alert("Stock insuficiente!");
+        return;
+    }
+
+    p.quantidade-=qtd;
+
+    movimentos.push({
+        data:hoje(),
+        tipo:"Venda",
+        descricao:"Venda: "+p.nome,
+        quantidade:qtd,
+        valor:qtd*p.venda,
+        custo:qtd*p.compra
+    });
+
+    guardar();
+    atualizar();
+    relatorio();
+    document.getElementById("vendaQtd").value="";
+    alert("Venda registada com sucesso!");
+}
+
+function adicionarDespesa(){
+    let nome=document.getElementById("despesaNome").value.trim();
+    let valor=Number(document.getElementById("despesaValor").value);
+
+    if(!nome || !Number.isFinite(valor) || valor<=0){
+        alert("Informe a descrição e um valor válido.");
+        return;
+    }
+
+    movimentos.push({
+        data:hoje(),
+        tipo:"Despesa",
+        descricao:nome,
+        valor:valor
+    });
+
+    guardar();
+    relatorio();
+    atualizarHistorico();
+
+    document.getElementById("despesaNome").value="";
+    document.getElementById("despesaValor").value="";
+    alert("Despesa registada!");
+}
+
+function excluir(id){
+    if(!confirm("Eliminar este produto? O histórico anterior será mantido."))return;
+
+    produtos=produtos.filter(p=>p.id!==id);
+    guardar();
+    atualizar();
+}
+
+function elemento(tag, texto){
+    let el=document.createElement(tag);
+    el.textContent=texto;
+    return el;
+}
+
+function atualizar(){
+    let lista=document.getElementById("listaProdutos");
+    let entradaSelect=document.getElementById("entradaProduto");
+    let vendaSelect=document.getElementById("vendaProduto");
+
+    lista.innerHTML="";
+    entradaSelect.innerHTML="";
+    vendaSelect.innerHTML="";
+
+    produtos.forEach(p=>{
+        let tr=document.createElement("tr");
+
+        [p.nome,p.quantidade,dinheiro(p.compra),dinheiro(p.venda)].forEach(v=>{
+            tr.appendChild(elemento("td",v));
+        });
+
+        let td=document.createElement("td");
+        let btn=elemento("button","Eliminar");
+        btn.className="excluir";
+        btn.onclick=()=>excluir(p.id);
+        td.appendChild(btn);
+        tr.appendChild(td);
+        lista.appendChild(tr);
+
+        [entradaSelect,vendaSelect].forEach(sel=>{
+            let opt=document.createElement("option");
+            opt.value=p.id;
+            opt.textContent=p.nome+" (Stock: "+p.quantidade+")";
+            sel.appendChild(opt);
+        });
+    });
+
+    document.getElementById("totalProdutos").textContent=produtos.length;
+    document.getElementById("totalUnidades").textContent=
+        produtos.reduce((s,p)=>s+p.quantidade,0);
+
+    atualizarHistorico();
+}
+
+function relatorio(){
+    let data=document.getElementById("dataRelatorio").value;
+
+    let compras=0,vendas=0,despesas=0,custo=0;
+
+    movimentos.filter(m=>m.data===data).forEach(m=>{
+        if(m.tipo==="Compra") compras+=m.valor;
+        if(m.tipo==="Venda"){
+            vendas+=m.valor;
+            custo+=m.custo;
+        }
+        if(m.tipo==="Despesa") despesas+=m.valor;
+    });
+
+    let bruto=vendas-custo;
+    let liquido=bruto-despesas;
+
+    document.getElementById("compras").textContent=dinheiro(compras);
+    document.getElementById("vendas").textContent=dinheiro(vendas);
+    document.getElementById("despesas").textContent=dinheiro(despesas);
+    document.getElementById("custoVendido").textContent=dinheiro(custo);
+    document.getElementById("lucroBruto").textContent=dinheiro(bruto);
+    document.getElementById("lucroLiquido").textContent=dinheiro(liquido);
+
+    document.getElementById("caixaLucro").className=
+        liquido>=0?"box green":"box red";
+}
+
+function atualizarHistorico(){
+    let tbody=document.getElementById("historico");
+    tbody.innerHTML="";
+
+    [...movimentos].reverse().slice(0,100).forEach(m=>{
+        let tr=document.createElement("tr");
+        [m.data,m.tipo,m.descricao,dinheiro(m.valor)].forEach(v=>{
+            tr.appendChild(elemento("td",v));
+        });
+        tbody.appendChild(tr);
+    });
+}
+
+document.getElementById("dataRelatorio").value=hoje();
+atualizar();
+relatorio();
+
+</script>
+</body>
+</html>
